@@ -54,7 +54,7 @@ paths:
           content:
             "*/*":
               schema:
-                "$ref": "#/components/schemas/User"
+                "$ref": "#/components/schemas/UserResponse"
     delete:
       tags:
       - 유저 관리
@@ -368,7 +368,7 @@ paths:
               schema:
                 type: array
                 items:
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/UserResponse"
     post:
       tags:
       - 유저 관리
@@ -388,6 +388,26 @@ paths:
             "*/*":
               schema:
                 type: string
+  "/api/users/login":
+    post:
+      tags:
+      - 유저 관리
+      summary: 로그인
+      description: 가입한 이메일과 비밀번호를 확인합니다.
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            "*/*":
+              schema:
+                "$ref": "#/components/schemas/LoginResponse"
   "/api/userProfile":
     post:
       tags:
@@ -709,6 +729,32 @@ paths:
               schema:
                 type: string
                 example: 이메일 주소가 올바르지 않습니다.
+  "/api/users/me":
+    get:
+      tags:
+      - 유저 관리
+      summary: 내 정보 조회
+      description: JWT 인증 토큰에 포함된 사용자 이메일을 이용해 로그인한 본인의 정보를 조회합니다.
+      operationId: getMyInfo
+      responses:
+        '200':
+          description: 사용자 정보 조회 성공
+          content:
+            "*/*":
+              schema:
+                "$ref": "#/components/schemas/MyInfoResponse"
+        '401':
+          description: 인증 토큰이 없거나 유효하지 않음
+          content:
+            "*/*":
+              schema:
+                "$ref": "#/components/schemas/MyInfoResponse"
+        '500':
+          description: 서버 내부 오류
+          content:
+            "*/*":
+              schema:
+                "$ref": "#/components/schemas/MyInfoResponse"
   "/api/userFavoriteStretchings/{userId}":
     get:
       tags:
@@ -926,6 +972,10 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/InactiveResponse"
+        '401':
+          description: 인증 필요
+        '403':
+          description: 접근 권한 오류
         '500':
           description: 서버 내부 오류
   "/api/environment/user/{userId}":
@@ -1040,15 +1090,13 @@ components:
       required:
       - password
       - userId
-    User:
+    UserResponse:
       type: object
       properties:
         id:
           type: integer
           format: int64
         userId:
-          type: string
-        password:
           type: string
     UserProfileRequest:
       type: object
@@ -1081,6 +1129,16 @@ components:
           format: double
           description: 집 위치의 경도
           example: 126.978
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: string
+        password:
+          type: string
     UserProfile:
       type: object
       properties:
@@ -1235,6 +1293,41 @@ components:
           format: date-time
         source:
           type: string
+    LoginRequest:
+      type: object
+      description: 로그인 요청
+      properties:
+        userId:
+          type: string
+          description: 가입한 이메일
+          example: teumzit@gmail.com
+        password:
+          type: string
+          description: 비밀번호
+          example: testpw00
+      required:
+      - password
+      - userId
+    LoginResponse:
+      type: object
+      description: 로그인 응답
+      properties:
+        message:
+          type: string
+          description: 로그인 결과
+          example: 로그인에 성공했습니다.
+        id:
+          type: integer
+          format: int64
+          description: 사용자 ID
+          example: 1
+        userId:
+          type: string
+          description: 사용자 이메일
+          example: teumzit@gmail.com
+        token:
+          type: string
+          description: JWT 인증 토큰
     UserFavoriteStretchingRequest:
       type: object
       description: 사용자 스트레칭 즐겨찾기 등록 요청
@@ -1444,6 +1537,19 @@ components:
           example: teumzit@gmail.com
       required:
       - email
+    MyInfoResponse:
+      type: object
+      description: 로그인한 사용자 정보
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 사용자 고유 ID
+          example: 1
+        userId:
+          type: string
+          description: 사용자 이메일
+          example: teumzit@gmail.com
     InactiveResponse:
       type: object
       description: 사용자의 비활동 상태 확인 응답
