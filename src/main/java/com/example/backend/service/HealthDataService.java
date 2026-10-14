@@ -8,11 +8,11 @@ import com.example.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
-import com.example.backend.dto.InactiveResponse; // 부동자세 판단 가져오기
 import java.time.LocalDateTime;
 import java.time.Duration;
+import java.util.Comparator;
 
+import com.example.backend.dto.InactiveResponse; // 부동자세 판단 가져오기
 
 @Service
 public class HealthDataService {
@@ -111,88 +111,39 @@ public class HealthDataService {
 
     // 부동 상태 확인
     public InactiveResponse checkInactive(Long userId) {
-
-    // 1. 사용자 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
-                        new RuntimeException("회원을 찾을 수 없습니다.")
-                );
+                        new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-    // 2. 해당 사용자의 건강 데이터 가져오기
-        List<HealthData> healthDataList =
-               healthDataRepository.findByUser(user);
+        List<HealthData> intervalRecords =
+                healthDataRepository.findByUser(user)
+                        .stream()
+                        .filter(data ->
+                                "STEPS_INTERVAL".equals(data.getDataType()))
+                        .filter(data -> data.getMeasuredAt() != null)
+                        .filter(data -> data.getValue() > 0)
+                        .sorted(Comparator.comparing(HealthData::getMeasuredAt))
+                        .toList();
 
-    // 3. 데이터가 없으면 판단할 수 없음
-        if (healthDataList.isEmpty()) {
-            return new InactiveResponse(false, 0);
+        if (intervalRecords.isEmpty()) {
+                // 움직임 기록이 없다는 이유만으로 부동 상태라고 단정하지 않습니다.
+                return new InactiveResponse(false, 0);
         }
 
-    // 4. STEPS 데이터만 사용
-        List<HealthData> stepDataList =
-            healthDataList.stream()
-                .filter(data ->
-                        "STEPS".equals(data.getDataType())
-                )
-                .filter(data ->
-                        data.getMeasuredAt() != null // NULL 데이터는 부동 판단에서 제외
-                )
-                .sorted((data1, data2) ->
-                        data1.getMeasuredAt()
-                                .compareTo(data2.getMeasuredAt())
-                )
-                .toList();
-
-    // 5. STEPS 데이터가 없으면 판단할 수 없음
-        if (stepDataList.isEmpty()) {
-            return new InactiveResponse(false, 0);
-        }
-
-    // 6. 가장 최근의 걸음 수
-        double latestSteps =
-                stepDataList.get(
-                        stepDataList.size() - 1
-                ).getValue();
-
-    // 7. 마지막으로 걸음 수가 증가한 시간
         LocalDateTime lastMovementTime =
-                stepDataList.get(0).getMeasuredAt();
+                intervalRecords.get(intervalRecords.size() - 1)
+                        .getMeasuredAt();
 
-    // 8. 이전 데이터와 비교
-        for (int i = 1; i < stepDataList.size(); i++) {
-
-            double previousSteps =
-                    stepDataList.get(i - 1).getValue();
-
-            double currentSteps =
-                    stepDataList.get(i).getValue();
-
-        // 걸음 수가 증가했다면
-        // 해당 시점을 마지막 움직임 시간으로 설정
-            if (currentSteps > previousSteps) {
-
-                lastMovementTime =
-                        stepDataList.get(i).getMeasuredAt();
-            }
-        }
-
-    // 9. 현재 시간
-        LocalDateTime now =
-                LocalDateTime.now();
-
-    // 10. 마지막 움직임 이후 경과 시간
-        long inactiveMinutes =
+        long inactiveMinutes = Math.max(
+                0,
                 Duration.between(
                         lastMovementTime,
-                        now
-                ).toMinutes();
-
-    // 11. 50분 이상 움직임이 없으면 부동 상태
-        boolean inactive =
-                inactiveMinutes >= 50;
-
-        return new InactiveResponse(
-                inactive,
-                inactiveMinutes
+                        LocalDateTime.now()
+                ).toMinutes()
         );
-    }
+
+        boolean inactive = inactiveMinutes >= 50;
+
+        return new InactiveResponse(inactive, inactiveMinutes);
+        }
 }

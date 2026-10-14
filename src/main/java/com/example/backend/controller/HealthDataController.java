@@ -244,6 +244,16 @@ public class HealthDataController {
             )
         ),
         @ApiResponse(
+            responseCode = "401",
+            description = "인증 필요",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "접근 권한 오류",
+            content = @Content
+        ),
+        @ApiResponse(
             responseCode = "500",
             description = "서버 내부 오류",
             content = @Content
@@ -253,8 +263,7 @@ public class HealthDataController {
     public InactiveResponse checkInactive(
             @Parameter(
                 description = "부동 상태를 확인할 사용자의 ID",
-                example = "1",
-                required = true
+                example = "1"
             )
             @PathVariable Long userId) {
 

@@ -4,6 +4,9 @@ import com.example.backend.domain.Stretching;
 import com.example.backend.dto.StretchingRequest;
 import com.example.backend.service.StretchingService;
 import org.springframework.web.bind.annotation.*;
+import com.example.backend.dto.StretchingRecommendationRequest;
+import org.springframework.http.HttpStatus;
+
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -213,4 +216,46 @@ public class StretchingController {
 
         return "스트레칭이 삭제되었습니다.";
     }
+
+    
+    // 맞춤형 스트레칭 추천
+    @PostMapping("/recommend")
+    @Operation(
+        summary = "맞춤형 스트레칭 추천",
+        description = "사용자 선호 부위, 남은 시간, 자세, 장소, 제약 조건 및 난이도를 기준으로 스트레칭을 추천합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "스트레칭 추천 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(
+                    type = "array",
+                    implementation = Stretching.class
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "요청 데이터가 올바르지 않음",
+            content = @Content
+        )
+    })
+    public List<Stretching> recommendStretchings(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "맞춤형 스트레칭 추천 조건",
+            required = true,
+            content = @Content(
+                schema = @Schema(
+                    implementation = StretchingRecommendationRequest.class
+                )
+            )
+        )
+        @org.springframework.web.bind.annotation.RequestBody
+        StretchingRecommendationRequest request
+    ) {
+        return stretchingService.recommendStretchings(request);
+    }
+
 }
