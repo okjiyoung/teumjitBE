@@ -1,4 +1,3 @@
-
 package com.example.backend.config;
 
 import com.example.backend.service.JwtService;
@@ -19,17 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(
-            JwtService jwtService) {
-        return new JwtAuthenticationFilter(jwtService);
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtFilter) throws Exception {
@@ -42,44 +30,13 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/v3/api-docs/**"
-                ).permitAll()
-                .requestMatchers("/api/**").permitAll()
-                .requestMatchers(
-                    HttpMethod.POST, "/api/users"
-                ).permitAll()
-                .requestMatchers(
-                    HttpMethod.POST, "/api/users/login"
-                ).permitAll()
-                .requestMatchers(
-                    "/api/email-verifications/**"
-                ).permitAll()
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/healthData/user/*/inactive"
-                ).permitAll()
-                .requestMatchers(
-                    HttpMethod.POST,
-                "/api/healthData"
-                ).permitAll()
-                .requestMatchers(
-                    "/api/locationData/**",
-                    "/api/environment/**"
-                ).permitAll()
-                .requestMatchers(
-                    "/api/stretchings/**"
-                ).permitAll()
-
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(
-                jwtFilter,
-                UsernamePasswordAuthenticationFilter.class
+                .anyRequest().permitAll()
             );
 
         return http.build();
+    }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
